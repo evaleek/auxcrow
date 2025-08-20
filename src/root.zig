@@ -1,5 +1,1 @@
-const std = @import("std");
-
-pub fn hello() void {
-    std.debug.print("Hello, world!", .{});
-}
+pub const pipewire = @import("pipewire.zig");

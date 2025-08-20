@@ -1,6 +1,12 @@
 .{
     .name = .auxcrow,
     .version = "0.0.0",
+    .dependencies = .{
+        .pipewire = .{
+            .url = "https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/1.0.0/pipewire-1.0.0.tar.gz",
+            .hash = "N-V-__8AAPBhugA8XhyTzFN9nNRZd2st4v8XA4bt18JI1oLX",
+        },
+    },
     .fingerprint = 0x7002d8771d14abda, // Changing this has security and trust implications.
     .minimum_zig_version = "0.14.1",
 
