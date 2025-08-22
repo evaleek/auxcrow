@@ -151,7 +151,7 @@ pub const Fd = extern struct {
 pub const object = struct {
     pub const RawAudioFormatUnpositioned = extern struct {
         header_size: u32 align(alignment) =
-            @sizeOf(AudioFormatUnpositioned)
+            @sizeOf(RawAudioFormatUnpositioned)
             - @sizeOf(u32)
             - @sizeOf(spa.Type), // TODO test
         header_type: spa.Type = .object,
@@ -176,7 +176,7 @@ pub const object = struct {
         format_flags: u32 = 0,
         format_header_size: u32 align(alignment) = 4,
         format_header_type: spa.Type = .id,
-        format: spa.AudioFormat,
+        format: spa.RawAudioFormat,
         _format_padding: u32 = 0,
 
         rate_key: spa.Format = .rate,
@@ -232,7 +232,7 @@ pub const object = struct {
             format_flags: u32 = 0,
             format_header_size: u32 align(alignment) = 4,
             format_header_type: spa.Type = .id,
-            format: spa.AudioFormat,
+            format: spa.RawAudioFormat,
             _format_padding: u32 = 0,
 
             rate_key: spa.Format = .rate,
