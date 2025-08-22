@@ -45,7 +45,20 @@ comptime {
             object.RawAudioFormatUnpositioned,
             object.RawAudioFormat(1),
             object.RawAudioFormat(2),
-            object.RawAudioFormat(3), }) |POD| {
+            object.RawAudioFormat(3),
+            object.RawAudioFormatChoiceUnpositioned(1),
+            object.RawAudioFormatChoiceUnpositioned(2),
+            object.RawAudioFormatChoiceUnpositioned(3),
+            object.RawAudioFormatChoice(1, 1),
+            object.RawAudioFormatChoice(1, 2),
+            object.RawAudioFormatChoice(1, 3),
+            object.RawAudioFormatChoice(2, 1),
+            object.RawAudioFormatChoice(2, 2),
+            object.RawAudioFormatChoice(2, 3),
+            object.RawAudioFormatChoice(3, 1),
+            object.RawAudioFormatChoice(3, 2),
+            object.RawAudioFormatChoice(3, 3),
+    }) |POD| {
         std.debug.assert(isPacked(POD));
         const header_size = @typeInfo(POD).@"struct".fields[0].defaultValue().?;
         std.debug.assert(totalSize(header_size) == @sizeOf(POD));
@@ -151,7 +164,7 @@ pub const Fd = extern struct {
 pub const object = struct {
     pub const RawAudioFormatUnpositioned = extern struct {
         header_size: u32 align(alignment) =
-            @sizeOf(RawAudioFormatUnpositioned)
+            @sizeOf(@This())
             - @sizeOf(u32)
             - @sizeOf(spa.Type), // TODO test
         header_type: spa.Type = .object,
@@ -205,14 +218,14 @@ pub const object = struct {
 
         if (channels <= 0) {
             @compileError(std.fmt.comptimePrint(
-                "cannot create a RawAudioFormat POD of {d} channels",
-                .{ channels },
+                "cannot create a {s} POD of {d} channels",
+                .{ @typeName(@This()), channels },
             ));
         }
 
         return extern struct {
             header_size: u32 align(alignment) =
-                @sizeOf(RawAudioFormat)
+                @sizeOf(@This())
                 - @sizeOf(u32)
                 - @sizeOf(spa.Type), // TODO test
             header_type: spa.Type = .object,
@@ -245,6 +258,195 @@ pub const object = struct {
             rate_header_size: u32 align(alignment) = 4,
             rate_header_type: spa.Type = .int,
             rate: i32,
+            _rate_padding: u32 = 0,
+
+            channels_key: spa.Format = .channels,
+            channels_flags: u32 = 0,
+            channels_header_size: u32 align(alignment) = 4,
+            channels_header_type: spa.Type = .int,
+            channels: i32 = channels,
+            _channels_padding: u32 = 0,
+
+            positions_key: spa.Format = .position,
+            positions_flags: u32 = 0,
+            positions_header_size: u32 align(alignment) =
+                @sizeOf(u32) +
+                @sizeOf(spa.Type) +
+                @sizeOf([channels]spa.AudioChannel),
+            positions_header_type: spa.Type = .array,
+            positions_child_size: u32 = 4,
+            positions_child_type: spa.Type = .id,
+            positions: [channels]spa.AudioChannel,
+            _positions_padding: @Type(.{ .int = .{
+                .signedness = .unsigned,
+                .bits = if (channels%2==0) 0 else std.mem.byte_size_in_bits*4,
+            }}) = 0,
+        };
+    }
+
+    pub fn RawAudioFormatChoiceUnpositioned(comptime format_choices: usize) type {
+        if (format_choices == 0) {
+            @compileError(std.fmt.comptimePrint(
+                "cannot create a {s} POD of {d} formats",
+                .{ @typeName(@This()), format_choices },
+            ));
+        }
+
+        return extern struct {
+            header_size: u32 align(alignment) =
+                @sizeOf(@This())
+                - @sizeOf(u32)
+                - @sizeOf(spa.Type), // TODO test
+            header_type: spa.Type = .object,
+            object_type: spa.Type.Object = .format,
+            object_id: spa.Parameter = .enum_format,
+
+            media_type_key: spa.Format = .media_type,
+            media_type_flag: u32 = 0,
+            media_type_header_size: u32 align(alignment) = 4,
+            media_type_header_type: spa.Type = .id,
+            media_type: spa.MediaType = .audio,
+            _media_type_padding: u32 = 0,
+
+            media_subtype_key: spa.Format = .media_subtype,
+            media_subtype_flag: u32 = 0,
+            media_subtype_header_size: u32 align(alignment) = 4,
+            media_subtype_header_type: spa.Type = .id,
+            media_subtype: spa.MediaSubtype = .raw,
+            _media_subtype_padding: u32 = 0,
+
+            format_key: spa.Format = .format,
+            format_flags: u32 = 0,
+            format_header_size: u32 align(alignment) =
+                @sizeOf(spa.Choice) +
+                @sizeOf(u32) +
+                @sizeOf(u32) +
+                @sizeOf(spa.Type) +
+                @sizeOf([format_choices]spa.RawAudioFormat),
+            format_header_type: spa.Type = .choice,
+            format_choice_type: spa.Choice = .@"enum",
+            format_choice_flags: u32 = 0,
+            format_choice_child_size: u32 = 4,
+            format_choice_child_type: spa.Type = .id,
+            /// The possible formats, in descending order of preference.
+            formats: [format_choices]spa.RawAudioFormat,
+            _format_padding: @Type(.{ .int = .{
+                .signedness = .unsigned,
+                .bits = if (format_choices%2==0) 0 else std.mem.byte_size_in_bits*4,
+            }}) = 0,
+
+            rate_key: spa.Format = .rate,
+            rate_flags: u32 = 0,
+            rate_header_size: u32 align(alignment) =
+                @sizeOf(spa.Choice) +
+                @sizeOf(u32) +
+                @sizeOf(u32) +
+                @sizeOf(spa.Type) +
+                @sizeOf([3]i32),
+            rate_header_type: spa.Type = .choice,
+            rate_choice_type: spa.Choice = .range,
+            rate_choice_flags: u32 = 0,
+            rate_choice_child_size: u32 = 4,
+            rate_choice_child_type: spa.Type = .int,
+            // The range of possible rates;
+            // default, minimum, and maximum respectively.
+            rates: [3]i32,
+            _rate_padding: u32 = 0,
+
+            channels_key: spa.Format = .channels,
+            channels_flags: u32 = 0,
+            channels_header_size: u32 align(alignment) = 4,
+            channels_header_type: spa.Type = .int,
+            channels: i32,
+            _channels_padding: u32 = 0,
+        };
+    }
+
+    pub fn RawAudioFormatChoice(
+        comptime format_choices: usize,
+        comptime channels: i32,
+    ) type {
+        if (format_choices == 0) {
+            @compileError(std.fmt.comptimePrint(
+                "cannot create a {s} POD of {d} format choices",
+                .{ @typeName(@This()), format_choices },
+            ));
+        }
+
+        if (channels > spa.max_audio_channels) {
+            @compileError(std.fmt.comptimePrint(
+                // TODO supply API version in error
+                "{d} channels exceeds the maximum {d} from PipeWire",
+                .{ channels, spa.max_audio_channels },
+            ));
+        }
+
+        if (channels <= 0) {
+            @compileError(std.fmt.comptimePrint(
+                "cannot create a {s} POD of {d} channels",
+                .{ @typeName(@This()), channels },
+            ));
+        }
+
+        return extern struct {
+            header_size: u32 align(alignment) =
+                @sizeOf(@This())
+                - @sizeOf(u32)
+                - @sizeOf(spa.Type), // TODO test
+            header_type: spa.Type = .object,
+            object_type: spa.Type.Object = .format,
+            object_id: spa.Parameter = .enum_format,
+
+            media_type_key: spa.Format = .media_type,
+            media_type_flag: u32 = 0,
+            media_type_header_size: u32 align(alignment) = 4,
+            media_type_header_type: spa.Type = .id,
+            media_type: spa.MediaType = .audio,
+            _media_type_padding: u32 = 0,
+
+            media_subtype_key: spa.Format = .media_subtype,
+            media_subtype_flag: u32 = 0,
+            media_subtype_header_size: u32 align(alignment) = 4,
+            media_subtype_header_type: spa.Type = .id,
+            media_subtype: spa.MediaSubtype = .raw,
+            _media_subtype_padding: u32 = 0,
+
+            format_key: spa.Format = .format,
+            format_flags: u32 = 0,
+            format_header_size: u32 align(alignment) =
+                @sizeOf(spa.Choice) +
+                @sizeOf(u32) +
+                @sizeOf(u32) +
+                @sizeOf(spa.Type) +
+                @sizeOf([format_choices]spa.RawAudioFormat),
+            format_header_type: spa.Type = .choice,
+            format_choice_type: spa.Choice = .@"enum",
+            format_choice_flags: u32 = 0,
+            format_choice_child_size: u32 = 4,
+            format_choice_child_type: spa.Type = .id,
+            /// The possible formats, in descending order of preference.
+            formats: [format_choices]spa.RawAudioFormat,
+            _format_padding: @Type(.{ .int = .{
+                .signedness = .unsigned,
+                .bits = if (format_choices%2==0) 0 else std.mem.byte_size_in_bits*4,
+            }}) = 0,
+
+            rate_key: spa.Format = .rate,
+            rate_flags: u32 = 0,
+            rate_header_size: u32 align(alignment) =
+                @sizeOf(spa.Choice) +
+                @sizeOf(u32) +
+                @sizeOf(u32) +
+                @sizeOf(spa.Type) +
+                @sizeOf([3]i32),
+            rate_header_type: spa.Type = .choice,
+            rate_choice_type: spa.Choice = .range,
+            rate_choice_flags: u32 = 0,
+            rate_choice_child_size: u32 = 4,
+            rate_choice_child_type: spa.Type = .int,
+            // The range of possible rates;
+            // default, minimum, and maximum respectively.
+            rates: [3]i32,
             _rate_padding: u32 = 0,
 
             channels_key: spa.Format = .channels,
