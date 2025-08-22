@@ -42,10 +42,10 @@ fn isPacked(comptime POD: type) bool {
 comptime {
     for (.{ None, Bool, Id, Int, Long, Float, Double,
             Rectangle, Fraction, Pointer, Fd,
-            object.AudioFormatUnpositioned,
-            object.AudioFormat(1),
-            object.AudioFormat(2),
-            object.AudioFormat(3), }) |POD| {
+            object.RawAudioFormatUnpositioned,
+            object.RawAudioFormat(1),
+            object.RawAudioFormat(2),
+            object.RawAudioFormat(3), }) |POD| {
         std.debug.assert(isPacked(POD));
         const header_size = @typeInfo(POD).@"struct".fields[0].defaultValue().?;
         std.debug.assert(totalSize(header_size) == @sizeOf(POD));
@@ -149,7 +149,7 @@ pub const Fd = extern struct {
 };
 
 pub const object = struct {
-    pub const AudioFormatUnpositioned = extern struct {
+    pub const RawAudioFormatUnpositioned = extern struct {
         header_size: u32 align(alignment) =
             @sizeOf(AudioFormatUnpositioned)
             - @sizeOf(u32)
@@ -194,7 +194,7 @@ pub const object = struct {
         _channels_padding: u32 = 0,
     };
 
-    pub fn AudioFormat(comptime channels: usize) type {
+    pub fn RawAudioFormat(comptime channels: usize) type {
         if (channels > spa.max_audio_channels)
             @compileError(std.fmt.comptimePrint(
                 // TODO supply API version in error
