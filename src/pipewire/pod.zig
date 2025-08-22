@@ -49,6 +49,7 @@ comptime {
         std.debug.assert(isPacked(POD));
         const header_size = @typeInfo(POD).@"struct".fields[0].defaultValue().?;
         std.debug.assert(totalSize(header_size) == @sizeOf(POD));
+        std.debug.assert(@sizeOf(POD)%8==0);
     }
 }
 
