@@ -41,7 +41,11 @@ fn isPacked(comptime POD: type) bool {
 
 comptime {
     for (.{ None, Bool, Id, Int, Long, Float, Double,
-            Rectangle, Fraction, Pointer, Fd }) |POD| {
+            Rectangle, Fraction, Pointer, Fd,
+            object.AudioFormatUnpositioned,
+            object.AudioFormat(1),
+            object.AudioFormat(2),
+            object.AudioFormat(3), }) |POD| {
         std.debug.assert(isPacked(POD));
         const header_size = @typeInfo(POD).@"struct".fields[0].defaultValue().?;
         std.debug.assert(totalSize(header_size) == @sizeOf(POD));
@@ -141,4 +145,123 @@ pub const Fd = extern struct {
     size: u32 align(alignment) = 8,
     @"type": spa.Type = .fd,
     value: i64,
+};
+
+pub const object = struct {
+    pub const AudioFormatUnpositioned = extern struct {
+        header_size: u32 align(alignment) =
+            @sizeOf(AudioFormatUnpositioned)
+            - @sizeOf(u32)
+            - @sizeOf(spa.Type), // TODO test
+        header_type: spa.Type = .object,
+        object_type: spa.Type.Object = .format,
+        object_id: spa.Parameter = .format,
+
+        media_type_key: spa.Format = .media_type,
+        media_type_flag: u32 = 0,
+        media_type_header_size: u32 align(alignment) = 4,
+        media_type_header_type: spa.Type = .id,
+        media_type: spa.MediaType = .audio,
+        _media_type_padding: u32 = 0,
+
+        media_subtype_key: spa.Format = .media_subtype,
+        media_subtype_flag: u32 = 0,
+        media_subtype_header_size: u32 align(alignment) = 4,
+        media_subtype_header_type: spa.Type = .id,
+        media_subtype: spa.MediaSubtype = .raw,
+        _media_subtype_padding: u32 = 0,
+
+        format_key: spa.Format = .format,
+        format_flags: u32 = 0,
+        format_header_size: u32 align(alignment) = 4,
+        format_header_type: spa.Type = .id,
+        format: spa.AudioFormat,
+        _format_padding: u32 = 0,
+
+        rate_key: spa.Format = .rate,
+        rate_flags: u32 = 0,
+        rate_header_size: u32 align(alignment) = 4,
+        rate_header_type: spa.Type = .int,
+        rate: i32,
+        _rate_padding: u32 = 0,
+
+        channels_key: spa.Format = .channels,
+        channels_flags: u32 = 0,
+        channels_header_size: u32 align(alignment) = 4,
+        channels_header_type: spa.Type = .int,
+        channels: i32,
+        _channels_padding: u32 = 0,
+    };
+
+    pub fn AudioFormat(comptime channels: usize) type {
+        if (channels > spa.max_audio_channels)
+            @compileError(std.fmt.comptimePrint(
+                // TODO supply API version in error
+                "{d} channels exceeds the maximum {d} from PipeWire",
+                .{ channels, spa.max_audio_channels },
+            ));
+
+        if (channels == 0)
+            @compileError("cannot create an AudioFormat POD for 0 channels");
+
+        return extern struct {
+            header_size: u32 align(alignment) =
+                @sizeOf(AudioFormat)
+                - @sizeOf(u32)
+                - @sizeOf(spa.Type), // TODO test
+            header_type: spa.Type = .object,
+            object_type: spa.Type.Object = .format,
+            object_id: spa.Parameter = .format,
+
+            media_type_key: spa.Format = .media_type,
+            media_type_flag: u32 = 0,
+            media_type_header_size: u32 align(alignment) = 4,
+            media_type_header_type: spa.Type = .id,
+            media_type: spa.MediaType = .audio,
+            _media_type_padding: u32 = 0,
+
+            media_subtype_key: spa.Format = .media_subtype,
+            media_subtype_flag: u32 = 0,
+            media_subtype_header_size: u32 align(alignment) = 4,
+            media_subtype_header_type: spa.Type = .id,
+            media_subtype: spa.MediaSubtype = .raw,
+            _media_subtype_padding: u32 = 0,
+
+            format_key: spa.Format = .format,
+            format_flags: u32 = 0,
+            format_header_size: u32 align(alignment) = 4,
+            format_header_type: spa.Type = .id,
+            format: spa.AudioFormat,
+            _format_padding: u32 = 0,
+
+            rate_key: spa.Format = .rate,
+            rate_flags: u32 = 0,
+            rate_header_size: u32 align(alignment) = 4,
+            rate_header_type: spa.Type = .int,
+            rate: i32,
+            _rate_padding: u32 = 0,
+
+            channels_key: spa.Format = .channels,
+            channels_flags: u32 = 0,
+            channels_header_size: u32 align(alignment) = 4,
+            channels_header_type: spa.Type = .int,
+            channels: i32 = channels,
+            _channels_padding: u32 = 0,
+
+            positions_key: spa.Format = .position,
+            positions_flags: u32 = 0,
+            positions_header_size: u32 align(alignment) =
+                @sizeOf(u32) +
+                @sizeOf(spa.Type) +
+                @sizeOf([channels]spa.AudioChannel),
+            positions_header_type: spa.Type = .array,
+            positions_child_size: u32 = 4,
+            positions_child_type: spa.Type = .id,
+            positions: [channels]spa.AudioChannel,
+            _positions_padding: @Type(.{ .int = .{
+                .signedness = .unsigned,
+                .bits = if (channels%2==0) 0 else std.mem.byte_size_in_bits*4,
+            }}) = 0,
+        };
+    }
 };
