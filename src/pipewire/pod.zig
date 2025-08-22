@@ -194,20 +194,25 @@ pub const object = struct {
         _channels_padding: u32 = 0,
     };
 
-    pub fn RawAudioFormat(comptime channels: usize) type {
-        if (channels > spa.max_audio_channels)
+    pub fn RawAudioFormat(comptime channels: i32) type {
+        if (channels > spa.max_audio_channels) {
             @compileError(std.fmt.comptimePrint(
                 // TODO supply API version in error
                 "{d} channels exceeds the maximum {d} from PipeWire",
                 .{ channels, spa.max_audio_channels },
             ));
+        }
 
-        if (channels == 0)
-            @compileError("cannot create an AudioFormat POD for 0 channels");
+        if (channels <= 0) {
+            @compileError(std.fmt.comptimePrint(
+                "cannot create a RawAudioFormat POD of {d} channels",
+                .{ channels },
+            ));
+        }
 
         return extern struct {
             header_size: u32 align(alignment) =
-                @sizeOf(AudioFormat)
+                @sizeOf(RawAudioFormat)
                 - @sizeOf(u32)
                 - @sizeOf(spa.Type), // TODO test
             header_type: spa.Type = .object,
