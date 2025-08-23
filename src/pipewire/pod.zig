@@ -348,8 +348,8 @@ pub const object = struct {
             rate_choice_flags: u32 = 0,
             rate_choice_child_size: u32 = 4,
             rate_choice_child_type: spa.Type = .int,
-            // The range of possible rates;
-            // default, minimum, and maximum respectively.
+            /// The range of possible rates;
+            /// default, minimum, and maximum respectively.
             rates: [3]i32,
             _rate_padding: u32 = 0,
 
@@ -444,8 +444,8 @@ pub const object = struct {
             rate_choice_flags: u32 = 0,
             rate_choice_child_size: u32 = 4,
             rate_choice_child_type: spa.Type = .int,
-            // The range of possible rates;
-            // default, minimum, and maximum respectively.
+            /// The range of possible rates;
+            /// default, minimum, and maximum respectively.
             rates: [3]i32,
             _rate_padding: u32 = 0,
 
