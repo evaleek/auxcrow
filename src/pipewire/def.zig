@@ -20,6 +20,172 @@ pub const api_version = .{
     .minor = 3,
 };
 
+// TODO these might be defined somewhere upstream but I couldn't find them,
+// for now this is from https://docs.pipewire.org/page_native_protocol.html
+pub const Op = struct {
+    pub const Core = struct {
+        pub const Method = enum(u8) {
+            hello               = 1,
+            sync                = 2,
+            pong                = 3,
+            @"error"            = 4,
+            get_registry        = 5,
+            create_object       = 6,
+            destroy             = 7,
+        };
+
+        pub const Event = enum(u8) {
+            info                = 0,
+            done                = 1,
+            ping                = 2,
+            @"error"            = 3,
+            remove_id           = 4,
+            bound_id            = 5,
+            add_mem             = 6,
+            remove_mem          = 7,
+            bound_props         = 8,
+        };
+    };
+
+    pub const Registry = struct {
+        pub const Method = enum(u8) {
+            bind                = 1,
+            destroy             = 2,
+        };
+
+        pub const Event = enum(u8) {
+            global              = 0,
+            global_remove       = 1,
+        };
+    };
+
+    pub const Client = struct {
+        pub const Method = enum(u8) {
+            @"error"            = 1,
+            update_properties   = 2,
+            get_permissions     = 3,
+            update_permissions  = 4,
+        };
+
+        pub const Event = enum(u8) {
+            info                = 0,
+            permissions         = 1,
+        };
+    };
+
+    pub const Device = struct {
+        pub const Method = enum(u8) {
+            subscribe_params    = 1,
+            enum_params         = 2,
+            set_param           = 3,
+        };
+
+        pub const Event = enum(u8) {
+            info                = 0,
+            param               = 1,
+        };
+    };
+
+    pub const Factory = struct {
+        pub const Method = enum(u8) {
+        };
+
+        pub const Event = enum(u8) {
+            info                = 0,
+        };
+    };
+
+    pub const Link = struct {
+        pub const Method = enum(u8) {
+        };
+
+        pub const Event = enum(u8) {
+            info                = 0,
+        };
+    };
+
+    pub const Module = struct {
+        pub const Method = enum(u8) {
+        };
+
+        pub const Event = enum(u8) {
+            info                = 0,
+        };
+    };
+
+    pub const Node = struct {
+        pub const Method = enum(u8) {
+            subscribe_params    = 1,
+            enum_params         = 2,
+            set_param           = 3,
+            send_command        = 4,
+        };
+
+        pub const Event = enum(u8) {
+            info                = 0,
+            param               = 1,
+        };
+    };
+
+    pub const Port = struct {
+        pub const Method = enum(u8) {
+            subscribe_params    = 1,
+            enum_params         = 2,
+        };
+
+        pub const Event = enum(u8) {
+            info                = 0,
+            param               = 1,
+        };
+    };
+
+    pub const ClientNode = struct {
+        pub const Method = enum(u8) {
+            get_node            = 1,
+            update              = 2,
+            port_update         = 3,
+            set_active          = 4,
+            event               = 5,
+            port_buffers        = 6,
+        };
+
+        pub const Event = enum(u8) {
+            transport           = 0,
+            set_param           = 1,
+            set_io              = 2,
+            event               = 3,
+            command             = 4,
+            add_port            = 5,
+            remove_port         = 6,
+            port_set_param      = 7,
+            use_buffers         = 8,
+            port_set_io         = 9,
+            set_activation      = 10,
+            port_set_mix_info   = 11,
+        };
+    };
+
+    pub const Metadata = struct {
+        pub const Method = enum(u8) {
+            set_property        = 1,
+            clear               = 2,
+        };
+
+        pub const Event = enum(u8) {
+            property            = 0,
+        };
+    };
+
+    pub const Profiler = struct {
+        pub const Method = enum(u8) {
+        };
+
+        pub const Event = enum(u8) {
+            profile             = 0,
+        };
+    };
+};
+
 pub const Type = enum(u32) {
     pub const start             = c.SPA_TYPE_START;
     none                        = c.SPA_TYPE_None,
